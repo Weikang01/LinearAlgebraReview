@@ -9,11 +9,10 @@ set_target_properties(LAR PROPERTIES
   VISIBILITY_INLINES_HIDDEN 1
 )
 
-include(GenerateExportHeader)
-generate_export_header(LAR EXPORT_FILE_NAME ${CMAKE_CURRENT_BINARY_DIR}/include/LAR_export.h)
-
 target_include_directories(LAR
   INTERFACE
-    ${CMAKE_CURRENT_BINARY_DIR}/include # Generated export header
     ${CMAKE_CURRENT_SOURCE_DIR}/include # Headers in source directory
 )
+
+enable_testing()
+add_subdirectory(tests)

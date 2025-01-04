@@ -231,6 +231,11 @@ namespace LAR
 			return result;
 		}
 
+		friend Matrix operator*(const DataType scalar, const Matrix& matrix)
+		{
+			return matrix * scalar;
+		}
+
 		template<typename OtherDataType>
 		Matrix operator/(const OtherDataType scalar) const
 		{
