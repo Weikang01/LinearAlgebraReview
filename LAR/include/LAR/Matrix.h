@@ -199,7 +199,6 @@ namespace LAR
 			}
 			return result;
 		}
-
 		static Matrix Random(const int rows, const int cols, const DataType min, const DataType max)
 		{
 			Matrix result(rows, cols);
@@ -209,7 +208,15 @@ namespace LAR
 			}
 			return result;
 		}
-
+		static Matrix Fill(const int rows, const int cols, const DataType value)
+		{
+			Matrix result(rows, cols);
+			for (int i = 0; i < rows * cols; ++i)
+			{
+				result.mData[i] = value;
+			}
+			return result;
+		}
 		static Matrix Magic(const int size)
 		{
 			Matrix result(size, size);
@@ -244,5 +251,122 @@ namespace LAR
 			}
 			return sum;
 		}
+
+		void SwapRows(const int row1, const int row2)
+		{
+			if (row1 < 0 || row1 >= mNumRows || row2 < 0 || row2 >= mNumRows)
+			{
+				throw std::invalid_argument("Rows must be within the bounds of the matrix.");
+			}
+			for (int i = 0; i < mNumCols; ++i)
+			{
+				std::swap(mData[row1 * mNumCols + i], mData[row2 * mNumCols + i]);
+			}
+		}
+
+		void SwapCols(const int col1, const int col2)
+		{
+			if (col1 < 0 || col1 >= mNumCols || col2 < 0 || col2 >= mNumCols)
+			{
+				throw std::invalid_argument("Columns must be within the bounds of the matrix.");
+			}
+			for (int i = 0; i < mNumRows; ++i)
+			{
+				std::swap(mData[i * mNumCols + col1], mData[i * mNumCols + col2]);
+			}
+		}
+
+		void ScaleRow(const int row, const DataType scalar)
+		{
+			if (row < 0 || row >= mNumRows)
+			{
+				throw std::invalid_argument("Row must be within the bounds of the matrix.");
+			}
+			for (int i = 0; i < mNumCols; ++i)
+			{
+				mData[row * mNumCols + i] *= scalar;
+			}
+		}
+
+		void ScaleCol(const int col, const DataType scalar)
+		{
+			if (col < 0 || col >= mNumCols)
+			{
+				throw std::invalid_argument("Column must be within the bounds of the matrix.");
+			}
+			for (int i = 0; i < mNumRows; ++i)
+			{
+				mData[i * mNumCols + col] *= scalar;
+			}
+		}
+
+		void AddRow(const int row1, const int row2, const DataType scalar)
+		{
+			if (row1 < 0 || row1 >= mNumRows || row2 < 0 || row2 >= mNumRows)
+			{
+				throw std::invalid_argument("Rows must be within the bounds of the matrix.");
+			}
+			for (int i = 0; i < mNumCols; ++i)
+			{
+				mData[row1 * mNumCols + i] += mData[row2 * mNumCols + i] * scalar;
+			}
+		}
+
+		void AddCol(const int col1, const int col2, const DataType scalar)
+		{
+			if (col1 < 0 || col1 >= mNumCols || col2 < 0 || col2 >= mNumCols)
+			{
+				throw std::invalid_argument("Columns must be within the bounds of the matrix.");
+			}
+			for (int i = 0; i < mNumRows; ++i)
+			{
+				mData[i * mNumCols + col1] += mData[i * mNumCols + col2] * scalar;
+			}
+		}
+
+		Matrix RowEchelonForm() const
+		{
+			Matrix result(*this);
+			int lead = 0;
+			for (int r = 0; r < result.mNumRows; ++r)
+			{
+				if (result.mNumCols <= lead)
+				{
+					break;
+				}
+				int i = r;
+				while (result(i, lead) == 0)
+				{
+					++i;
+					if (result.mNumRows == i)
+					{
+						i = r;
+						++lead;
+						if (result.mNumCols == lead)
+						{
+							break;
+						}
+					}
+				}
+				if (result.mNumCols == lead)
+				{
+					break;
+				}
+				result.SwapRows(i, r);
+				if (result(r, lead) != 0)
+				{
+					result.ScaleRow(r, 1 / result(r, lead));
+				}
+				for (int i = 0; i < result.mNumRows; ++i)
+				{
+					if (i != r)
+					{
+						result.AddRow(i, r, -result(i, lead));
+					}
+				}
+				++lead;
+			}
+			return result;
+		}
 	};
-}
+} // namespace LAR

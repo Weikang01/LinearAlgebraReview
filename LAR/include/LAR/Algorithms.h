@@ -1,9 +1,12 @@
 #pragma once
+#include <type_traits>
+#include "Rational.h"
 
 namespace LAR
 {
 	template<typename DataType>
-	DataType RandomValue(DataType min, DataType max)
+	typename std::enable_if<std::is_arithmetic<DataType>::value, DataType>::type
+	RandomValue(const DataType min, const DataType max)
 	{
 		return min + static_cast<DataType>(rand()) / (static_cast<DataType>(RAND_MAX / (max - min)));
 	}

@@ -178,6 +178,11 @@ namespace LAR
 			return result;
 		}
 
+		void TransposeInPlace() const
+		{
+			*this = Transpose();
+		}
+
 		int mNumRows;
 		int mNumCols;
 		DataType* mData;
