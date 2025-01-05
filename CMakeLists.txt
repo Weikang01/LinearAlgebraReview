@@ -8,4 +8,4 @@ add_subdirectory(LAR)
 
 include_directories(PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/LAR/include ${CMAKE_CURRENT_BINARY_DIR}/LAR/include)
 
-add_executable(${PROJECT_NAME} main.cpp "LAR/tests/MatrixTest.cpp")
+add_executable(${PROJECT_NAME} main.cpp "LAR/tests/MatrixTest.cpp" "LAR/include/LAR/Vector.h" "LAR/include/LAR/Matrix.h")

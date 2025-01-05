@@ -1,21 +1,24 @@
 #pragma once
-#include <iostream>
+#include "MatrixBase.h"
 #include "LAR_export.h"
 #include "Algorithms.h"
 
 namespace LAR
 {
-	template <typename DataType>
-	class LAR_EXPORT Matrix
+	template<typename DataType>
+	class LAR_EXPORT Matrix : public MatrixBase<Matrix<DataType>, DataType>
 	{
 	public:
-#pragma region Utility Functions
+		using MatrixBase<Matrix<DataType>, DataType>::MatrixBase; // Inherit constructors
+		using MatrixBase<Matrix<DataType>, DataType>::operator*;
+
 		class RowView
 		{
 		public:
 			RowView(DataType* data, const int cols)
 				: mData(data), mCols(cols)
-			{}
+			{
+			}
 			DataType& operator[](const int col)
 			{
 				return mData[col];
@@ -51,220 +54,137 @@ namespace LAR
 		};
 
 		Matrix(const int rows, const int cols)
-			: mNumRows(rows), mNumCols(cols), mData(new DataType[rows * cols])
-		{
-		}
-		Matrix(const Matrix& other)
-			: mNumRows(other.mNumRows), mNumCols(other.mNumCols), mData(new DataType[other.mNumRows * other.mNumCols])
-		{
-			for (int i = 0; i < mNumRows * mNumCols; ++i)
-			{
-				mData[i] = other.mData[i];
-			}
-		}
-		virtual ~Matrix()
-		{
-			delete[] mData;
-		}
-		Matrix& operator=(const Matrix& other)
-		{
-			if (this != &other)
-			{
-				delete[] mData;
-				mNumRows = other.mNumRows;
-				mNumCols = other.mNumCols;
-				mData = new DataType[mNumRows * mNumCols];
-				for (int i = 0; i < mNumRows * mNumCols; ++i)
-				{
-					mData[i] = other.mData[i];
-				}
-			}
-			return *this;
-		}
-		DataType& operator()(const int row, const int col)
-		{
-			return mData[row * mNumCols + col];
-		}
-		DataType operator()(const int row, const int col) const
-		{
-			return mData[row * mNumCols + col];
-		}
+			: MatrixBase<Matrix<DataType>, DataType>(rows, cols) {}
+
+		Matrix(const MatrixBase<Matrix<DataType>, DataType>& other)
+			: MatrixBase<Matrix<DataType>, DataType>(other) {}
 
 		RowView operator[](const int row)
 		{
-			return RowView(mData + row * mNumCols, mNumCols);
+			return RowView(this->mData + row * this->mNumCols, this->mNumCols);
 		}
 		RowView operator[](const int row) const
 		{
-			return RowView(mData + row * mNumCols, mNumCols);
+			return RowView(this->mData + row * this->mNumCols, this->mNumCols);
 		}
 		ColView getCol(const int col)
 		{
-			return ColView(mData + col, mNumRows, mNumCols);
+			return ColView(this->mData + col, this->mNumRows, this->mNumCols);
 		}
 		ColView getCol(const int col) const
 		{
-			return ColView(mData + col, mNumRows, mNumCols);
+			return ColView(this->mData + col, this->mNumRows, this->mNumCols);
 		}
 
-		int getRows() const
+		template<typename OtherDataType>
+		auto operator*(const Matrix<OtherDataType>& other) const
 		{
-			return mNumRows;
-		}
-		int getCols() const
-		{
-			return mNumCols;
-		}
-
-		friend std::ostream& operator<<(std::ostream& os, const Matrix& matrix)
-		{
-			for (int i = 0; i < matrix.mNumRows; ++i)
+			if (this->mNumCols != other.mNumRows)
 			{
-				for (int j = 0; j < matrix.mNumCols; ++j)
-				{
-					os << matrix.mData[i * matrix.mNumCols + j] << " ";
-				}
-				os << std::endl;
+				throw std::invalid_argument("Number of columns in first matrix must match number of rows in second matrix.");
 			}
-			return os;
-		}
-
-		bool operator==(const Matrix& other) const
-		{
-			if (mNumRows != other.mNumRows || mNumCols != other.mNumCols)
+			Matrix<decltype(DataType()* OtherDataType())> result(this->mNumRows, other.mNumCols);
+			for (int i = 0; i < this->mNumRows; ++i)
 			{
-				return false;
-			}
-			for (int i = 0; i < mNumRows * mNumCols; ++i)
-			{
-				if (mData[i] != other.mData[i])
+				for (int j = 0; j < other.mNumCols; ++j)
 				{
-					return false;
+					result(i, j) = 0;
+					for (int k = 0; k < this->mNumCols; ++k)
+					{
+						result(i, j) += (*this)(i, k) * other(k, j);
+					}
 				}
 			}
-			return true;
-		}
-		
-		bool operator!=(const Matrix& other) const
-		{
-			return !(*this == other);
+			return result;
 		}
 
-#pragma endregion Utility Functions
+		template<typename OtherDataType, bool OtherRowVector>
+		auto operator*(const Vector<OtherDataType, OtherRowVector>& vector) const
+		{
+			if (this->mNumCols != vector.GetSize())
+			{
+				throw std::invalid_argument("Number of columns in matrix must match size of vector.");
+			}
+			Vector<decltype(DataType()* OtherDataType()), true> result(this->mNumRows);
+			for (int i = 0; i < this->mNumRows; ++i)
+			{
+				result[i] = 0;
+				for (int j = 0; j < this->mNumCols; ++j)
+				{
+					result[i] += (*this)(i, j) * vector[j];
+				}
+			}
+			return result;
+		}
 
 		bool IsSquare() const
 		{
 			return mNumRows == mNumCols;
 		}
-
-		bool CanMultiply(const Matrix& other) const
+		bool IsIdentity() const
 		{
-			return mNumCols == other.mNumRows;
-		}
-
-		bool SameSize(const Matrix& other) const
-		{
-			return mNumRows == other.mNumRows && mNumCols == other.mNumCols;
-		}
-
-		template<typename OtherDataType>
-		Matrix operator+(const Matrix<OtherDataType>& other) const
-		{
-			if (!SameSize(other))
+			if (!IsSquare())
 			{
-				throw std::invalid_argument("Matrices must be the same size to add them.");
+				return false;
 			}
-			Matrix result(mNumRows, mNumCols);
-			for (int i = 0; i < mNumRows * mNumCols; ++i)
-			{
-				result.mData[i] = mData[i] + other.mData[i];
-			}
-			return result;
-		}
-
-		template<typename OtherDataType>
-		Matrix operator-(const Matrix<OtherDataType>& other) const
-		{
-			if (!SameSize(other))
-			{
-				throw std::invalid_argument("Matrices must be the same size to subtract them.");
-			}
-			Matrix result(mNumRows, mNumCols);
-			for (int i = 0; i < mNumRows * mNumCols; ++i)
-			{
-				result.mData[i] = mData[i] - other.mData[i];
-			}
-			return result;
-		}
-
-		template<typename OtherDataType>
-		Matrix operator*(const Matrix<OtherDataType>& other) const
-		{
-			if (!CanMultiply(other))
-			{
-				throw std::invalid_argument("Matrices must have the same number of columns as the other matrix has rows to multiply them.");
-			}
-			Matrix result(mNumRows, other.mNumCols);
-			for (int i = 0; i < mNumRows; ++i)
-			{
-				for (int j = 0; j < other.mNumCols; ++j)
-				{
-					DataType sum = 0;
-					for (int k = 0; k < mNumCols; ++k)
-					{
-						sum += mData[i * mNumCols + k] * other.mData[k * other.mNumCols + j];
-					}
-					result.mData[i * other.mNumCols + j] = sum;
-				}
-			}
-			return result;
-		}
-
-		template<typename OtherDataType>
-		Matrix operator*(const OtherDataType scalar) const
-		{
-			Matrix result(mNumRows, mNumCols);
-			for (int i = 0; i < mNumRows * mNumCols; ++i)
-			{
-				result.mData[i] = mData[i] * scalar;
-			}
-			return result;
-		}
-
-		friend Matrix operator*(const DataType scalar, const Matrix& matrix)
-		{
-			return matrix * scalar;
-		}
-
-		template<typename OtherDataType>
-		Matrix operator/(const OtherDataType scalar) const
-		{
-			Matrix result(mNumRows, mNumCols);
-			for (int i = 0; i < mNumRows * mNumCols; ++i)
-			{
-				result.mData[i] = mData[i] / scalar;
-			}
-			return result;
-		}
-
-		Matrix operator-() const
-		{
-			Matrix result(mNumRows, mNumCols);
-			for (int i = 0; i < mNumRows * mNumCols; ++i)
-			{
-				result.mData[i] = -mData[i];
-			}
-			return result;
-		}
-
-		Matrix Transpose() const
-		{
-			Matrix result(mNumCols, mNumRows);
 			for (int i = 0; i < mNumRows; ++i)
 			{
 				for (int j = 0; j < mNumCols; ++j)
 				{
-					result.mData[j * mNumRows + i] = mData[i * mNumCols + j];
+					if (i == j && mData[i * mNumCols + j] != 1)
+					{
+						return false;
+					}
+					else if (i != j && mData[i * mNumCols + j] != 0)
+					{
+						return false;
+					}
+				}
+			}
+			return true;
+		}
+		bool IsSymmetric() const
+		{
+			if (!IsSquare())
+			{
+				return false;
+			}
+			for (int i = 0; i < mNumRows; ++i)
+			{
+				for (int j = 0; j < mNumCols; ++j)
+				{
+					if (mData[i * mNumCols + j] != mData[j * mNumCols + i])
+					{
+						return false;
+					}
+				}
+			}
+			return true;
+		}
+
+		Matrix Minor(const int row, const int col) const
+		{
+			if (mNumRows <= 1 || mNumCols <= 1)
+			{
+				throw std::invalid_argument("Matrix must be at least 2x2 to find a minor.");
+			}
+
+			if (row < 0 || row >= mNumRows || col < 0 || col >= mNumCols)
+			{
+				throw std::invalid_argument("Row and column must be within the bounds of the matrix.");
+			}
+
+			Matrix result(mNumRows - 1, mNumCols - 1);
+			for (int i = 0; i < mNumRows; ++i)
+			{
+				for (int j = 0; j < mNumCols; ++j)
+				{
+					if (i != row && j != col)
+					{
+						int iOffset = i < row ? 0 : -1;
+						int jOffset = j < col ? 0 : -1;
+						result(i + iOffset, j + jOffset) = mData[i * mNumCols + j];
+					}
 				}
 			}
 			return result;
@@ -279,6 +199,7 @@ namespace LAR
 			}
 			return result;
 		}
+
 		static Matrix Random(const int rows, const int cols, const DataType min, const DataType max)
 		{
 			Matrix result(rows, cols);
@@ -288,6 +209,7 @@ namespace LAR
 			}
 			return result;
 		}
+
 		static Matrix Magic(const int size)
 		{
 			Matrix result(size, size);
@@ -309,48 +231,18 @@ namespace LAR
 			return result;
 		}
 
-	private:
-		int mNumRows;
-		int mNumCols;
-		DataType* mData;
-	};
-
-	template<typename DataType, bool RowVector = false>
-	class LAR_EXPORT Vector : public Matrix<DataType>
-	{
-	public:
-		Vector(const int size)
-			: Matrix<DataType>(RowVector ? 1 : size, RowVector ? size : 1)
+		DataType Trace() const
 		{
-		}
-
-		Vector(const Matrix<DataType>& other)
-			: Matrix<DataType>(other)
-		{
-		}
-
-		DataType& operator[](const int index)
-		{
-			if (Matrix<DataType>::getRows() == 1)
+			if (!IsSquare())
 			{
-				return Matrix<DataType>::operator()(0, index);
+				throw std::invalid_argument("Matrix must be square to find the trace.");
 			}
-			else
+			DataType sum = 0;
+			for (int i = 0; i < mNumRows; ++i)
 			{
-				return Matrix<DataType>::operator()(index, 0);
+				sum += mData[i * mNumCols + i];
 			}
-		}
-
-		DataType operator[](const int index) const
-		{
-			if (Matrix<DataType>::getRows() == 1)
-			{
-				return Matrix<DataType>::operator()(0, index);
-			}
-			else
-			{
-				return Matrix<DataType>::operator()(index, 0);
-			}
+			return sum;
 		}
 	};
 }
