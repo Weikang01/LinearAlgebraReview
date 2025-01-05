@@ -12,7 +12,7 @@ namespace LAR
 		using MatrixBase<Vector<DataType, RowVector>, DataType>::MatrixBase;
 		using MatrixBase<Vector<DataType, RowVector>, DataType>::operator*;
 
-		Vector(const int size)
+		Vector(const size_t size)
 			: MatrixBase<Vector<DataType, RowVector>, DataType>(RowVector ? 1 : size, RowVector ? size : 1)
 		{
 		}
@@ -23,6 +23,25 @@ namespace LAR
 		{
 		}
 
+		Vector(const std::initializer_list<DataType>& list)
+			: MatrixBase<Vector<DataType, true>, DataType>(1, list.size())
+		{
+			size_t i = 0;
+			for (const auto& value : list)
+			{
+				(*this)[i++] = value;
+			}
+		}
+
+		Vector(const DataType* data, const size_t size, const bool rowVector = false)
+			: MatrixBase<Vector<DataType, RowVector>, DataType>(rowVector ? 1 : size, rowVector ? size : 1)
+		{
+			for (size_t i = 0; i < size; ++i)
+			{
+				(*this)[i] = data[i];
+			}
+		}
+
 		template<typename OtherDataType, bool OtherRowVector>
 		auto operator*(const Vector<OtherDataType, OtherRowVector>& other) const
 		{
@@ -31,7 +50,7 @@ namespace LAR
 				throw std::invalid_argument("Vectors must be the same size to multiply them.");
 			}
 			DataType result = 0;
-			for (int i = 0; i < GetSize(); ++i)
+			for (size_t i = 0; i < GetSize(); ++i)
 			{
 				result += (*this)[i] * other[i];
 			}
@@ -46,10 +65,10 @@ namespace LAR
 				throw std::invalid_argument("Number of columns in vector must match number of rows in matrix.");
 			}
 			Vector<decltype(DataType()* OtherDataType()), RowVector> result(other.GetCols());
-			for (int i = 0; i < other.GetCols(); ++i)
+			for (size_t i = 0; i < other.GetCols(); ++i)
 			{
 				result[i] = 0;
-				for (int j = 0; j < GetSize(); ++j)
+				for (size_t j = 0; j < GetSize(); ++j)
 				{
 					result[i] += (*this)[j] * other(j, i);
 				}
@@ -57,12 +76,12 @@ namespace LAR
 			return result;
 		}
 
-		int GetSize() const
+		size_t GetSize() const
 		{
 			return mNumRows == 1 ? GetCols() : GetRows();
 		}
 
-		DataType& operator[](const int index)
+		DataType& operator[](const size_t index)
 		{
 			if (GetRows() == 1)
 			{
@@ -74,7 +93,7 @@ namespace LAR
 			}
 		}
 
-		DataType operator[](const int index) const
+		DataType operator[](const size_t index) const
 		{
 			if (GetRows() == 1)
 			{
@@ -94,7 +113,7 @@ namespace LAR
 				throw std::invalid_argument("Vectors must be the same size to calculate the dot product.");
 			}
 			DataType result = 0;
-			for (int i = 0; i < GetSize(); ++i)
+			for (size_t i = 0; i < GetSize(); ++i)
 			{
 				result += (*this)[i] * other[i];
 			}
@@ -119,9 +138,9 @@ namespace LAR
 		Matrix<DataType> OuterProduct(const Vector<OtherDataType, OtherRowVector>& other) const
 		{
 			Matrix<DataType> result(GetSize(), other.GetSize());
-			for (int i = 0; i < GetSize(); ++i)
+			for (size_t i = 0; i < GetSize(); ++i)
 			{
-				for (int j = 0; j < other.GetSize(); ++j)
+				for (size_t j = 0; j < other.GetSize(); ++j)
 				{
 					result(i, j) = (*this)[i] * other[j];
 				}

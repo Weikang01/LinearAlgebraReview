@@ -5,7 +5,13 @@
 
 int main(int argc, char* argv[])
 {
-	LAR::Matrix<LAR::Rational> m1 = LAR::Matrix<LAR::Rational>::Random(3, 4, -10, 10);
+	std::vector<std::vector<LAR::Rational>> data = {
+		{1, 2, 3, 4},
+		{5, 6, 7, 8},
+		{9, 10, 11, 12}
+	};
+
+	LAR::Matrix<LAR::Rational> m1 = data;
 
 	std::cout << "m1:\n" << m1 << std::endl;
 

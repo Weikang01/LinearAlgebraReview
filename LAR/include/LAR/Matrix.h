@@ -2,6 +2,7 @@
 #include "MatrixBase.h"
 #include "LAR_export.h"
 #include "Algorithms.h"
+#include <vector>
 
 namespace LAR
 {
@@ -15,63 +16,84 @@ namespace LAR
 		class RowView
 		{
 		public:
-			RowView(DataType* data, const int cols)
+			RowView(DataType* data, const size_t cols)
 				: mData(data), mCols(cols)
 			{
 			}
-			DataType& operator[](const int col)
+			DataType& operator[](const size_t col)
 			{
 				return mData[col];
 			}
-			DataType operator[](const int col) const
+			DataType operator[](const size_t col) const
 			{
 				return mData[col];
 			}
 		private:
 			DataType* mData;
-			int mCols;
+			size_t mCols;
 		};
 
 		class ColView
 		{
 		public:
-			ColView(DataType* data, const int rows, const int cols)
+			ColView(DataType* data, const size_t rows, const size_t cols)
 				: mData(data), mRows(rows), mCols(cols)
 			{
 			}
-			DataType& operator[](const int row)
+			DataType& operator[](const size_t row)
 			{
 				return mData[row * mCols];
 			}
-			DataType operator[](const int row) const
+			DataType operator[](const size_t row) const
 			{
 				return mData[row * mCols];
 			}
 		private:
 			DataType* mData;
-			int mRows;
-			int mCols;
+			size_t mRows;
+			size_t mCols;
 		};
 
-		Matrix(const int rows, const int cols)
+		Matrix(const size_t rows, const size_t cols)
 			: MatrixBase<Matrix<DataType>, DataType>(rows, cols) {}
 
 		Matrix(const MatrixBase<Matrix<DataType>, DataType>& other)
 			: MatrixBase<Matrix<DataType>, DataType>(other) {}
 
-		RowView operator[](const int row)
+		Matrix(const DataType* data, const size_t rows, const size_t cols)
+			: MatrixBase<Matrix<DataType>, DataType>(rows, cols)
+		{
+			for (size_t i = 0; i < rows * cols; ++i)
+			{
+				this->mData[i] = data[i];
+			}
+		}
+
+		Matrix(const std::vector<std::vector<DataType>>& data)
+			: MatrixBase<Matrix<DataType>, DataType>(data.size(), data[0].size())
+		{
+			for (size_t i = 0; i < this->mNumRows; ++i)
+			{
+				for (size_t j = 0; j < this->mNumCols; ++j)
+				{
+					(*this)(i, j) = data[i][j];
+				}
+			}
+		}
+
+		RowView operator[](const size_t row)
 		{
 			return RowView(this->mData + row * this->mNumCols, this->mNumCols);
 		}
-		RowView operator[](const int row) const
+		RowView operator[](const size_t row) const
 		{
 			return RowView(this->mData + row * this->mNumCols, this->mNumCols);
 		}
-		ColView getCol(const int col)
+		ColView getCol(const size_t col)
 		{
 			return ColView(this->mData + col, this->mNumRows, this->mNumCols);
 		}
-		ColView getCol(const int col) const
+		ColView getCol(const size_t col) const
 		{
 			return ColView(this->mData + col, this->mNumRows, this->mNumCols);
 		}
@@ -84,12 +106,12 @@ namespace LAR
 				throw std::invalid_argument("Number of columns in first matrix must match number of rows in second matrix.");
 			}
 			Matrix<decltype(DataType()* OtherDataType())> result(this->mNumRows, other.mNumCols);
-			for (int i = 0; i < this->mNumRows; ++i)
+			for (size_t i = 0; i < this->mNumRows; ++i)
 			{
-				for (int j = 0; j < other.mNumCols; ++j)
+				for (size_t j = 0; j < other.mNumCols; ++j)
 				{
 					result(i, j) = 0;
-					for (int k = 0; k < this->mNumCols; ++k)
+					for (size_t k = 0; k < this->mNumCols; ++k)
 					{
 						result(i, j) += (*this)(i, k) * other(k, j);
 					}
@@ -106,10 +128,10 @@ namespace LAR
 				throw std::invalid_argument("Number of columns in matrix must match size of vector.");
 			}
 			Vector<decltype(DataType()* OtherDataType()), true> result(this->mNumRows);
-			for (int i = 0; i < this->mNumRows; ++i)
+			for (size_t i = 0; i < this->mNumRows; ++i)
 			{
 				result[i] = 0;
-				for (int j = 0; j < this->mNumCols; ++j)
+				for (size_t j = 0; j < this->mNumCols; ++j)
 				{
 					result[i] += (*this)(i, j) * vector[j];
 				}
@@ -127,9 +149,9 @@ namespace LAR
 			{
 				return false;
 			}
-			for (int i = 0; i < mNumRows; ++i)
+			for (size_t i = 0; i < mNumRows; ++i)
 			{
-				for (int j = 0; j < mNumCols; ++j)
+				for (size_t j = 0; j < mNumCols; ++j)
 				{
 					if (i == j && mData[i * mNumCols + j] != 1)
 					{
@@ -149,9 +171,9 @@ namespace LAR
 			{
 				return false;
 			}
-			for (int i = 0; i < mNumRows; ++i)
+			for (size_t i = 0; i < mNumRows; ++i)
 			{
-				for (int j = 0; j < mNumCols; ++j)
+				for (size_t j = 0; j < mNumCols; ++j)
 				{
 					if (mData[i * mNumCols + j] != mData[j * mNumCols + i])
 					{
@@ -162,7 +184,7 @@ namespace LAR
 			return true;
 		}
 
-		Matrix Minor(const int row, const int col) const
+		Matrix Minor(const size_t row, const size_t col) const
 		{
 			if (mNumRows <= 1 || mNumCols <= 1)
 			{
@@ -175,54 +197,54 @@ namespace LAR
 			}
 
 			Matrix result(mNumRows - 1, mNumCols - 1);
-			for (int i = 0; i < mNumRows; ++i)
+			for (size_t i = 0; i < mNumRows; ++i)
 			{
-				for (int j = 0; j < mNumCols; ++j)
+				for (size_t j = 0; j < mNumCols; ++j)
 				{
 					if (i != row && j != col)
 					{
-						int iOffset = i < row ? 0 : -1;
-						int jOffset = j < col ? 0 : -1;
-						result(i + iOffset, j + jOffset) = mData[i * mNumCols + j];
+						size_t iOffset = i < row ? 0 : 1;
+						size_t jOffset = j < col ? 0 : 1;
+						result(i - iOffset, j - jOffset) = mData[i * mNumCols + j];
 					}
 				}
 			}
 			return result;
 		}
 
-		static Matrix Identity(const int size)
+		static Matrix Identity(const size_t size)
 		{
 			Matrix result(size, size);
-			for (int i = 0; i < size; ++i)
+			for (size_t i = 0; i < size; ++i)
 			{
 				result.mData[i * size + i] = 1;
 			}
 			return result;
 		}
-		static Matrix Random(const int rows, const int cols, const DataType min, const DataType max)
+		static Matrix Random(const size_t rows, const size_t cols, const DataType min, const DataType max)
 		{
 			Matrix result(rows, cols);
-			for (int i = 0; i < rows * cols; ++i)
+			for (size_t i = 0; i < rows * cols; ++i)
 			{
 				result.mData[i] = RandomValue(min, max);
 			}
 			return result;
 		}
-		static Matrix Fill(const int rows, const int cols, const DataType value)
+		static Matrix Fill(const size_t rows, const size_t cols, const DataType value)
 		{
 			Matrix result(rows, cols);
-			for (int i = 0; i < rows * cols; ++i)
+			for (size_t i = 0; i < rows * cols; ++i)
 			{
 				result.mData[i] = value;
 			}
 			return result;
 		}
-		static Matrix Magic(const int size)
+		static Matrix Magic(const size_t size)
 		{
 			Matrix result(size, size);
-			int row = 0;
-			int col = size / 2;
-			for (int i = 1; i <= size * size; ++i)
+			size_t row = 0;
+			size_t col = size / 2;
+			for (size_t i = 1; i <= size * size; ++i)
 			{
 				result(row, col) = i;
 				if (i % size == 0)
@@ -237,6 +259,18 @@ namespace LAR
 			}
 			return result;
 		}
+		static Matrix Vandermonde(const size_t rows, const size_t cols, const DataType start, const DataType step)
+		{
+			Matrix result(rows, cols);
+			for (size_t i = 0; i < rows; ++i)
+			{
+				for (size_t j = 0; j < cols; ++j)
+				{
+					result(i, j) = std::pow(start + i, j);
+				}
+			}
+			return result;
+		}
 
 		DataType Trace() const
 		{
@@ -245,80 +279,80 @@ namespace LAR
 				throw std::invalid_argument("Matrix must be square to find the trace.");
 			}
 			DataType sum = 0;
-			for (int i = 0; i < mNumRows; ++i)
+			for (size_t i = 0; i < mNumRows; ++i)
 			{
 				sum += mData[i * mNumCols + i];
 			}
 			return sum;
 		}
 
-		void SwapRows(const int row1, const int row2)
+		void SwapRows(const size_t row1, const size_t row2)
 		{
 			if (row1 < 0 || row1 >= mNumRows || row2 < 0 || row2 >= mNumRows)
 			{
 				throw std::invalid_argument("Rows must be within the bounds of the matrix.");
 			}
-			for (int i = 0; i < mNumCols; ++i)
+			for (size_t i = 0; i < mNumCols; ++i)
 			{
 				std::swap(mData[row1 * mNumCols + i], mData[row2 * mNumCols + i]);
 			}
 		}
 
-		void SwapCols(const int col1, const int col2)
+		void SwapCols(const size_t col1, const size_t col2)
 		{
 			if (col1 < 0 || col1 >= mNumCols || col2 < 0 || col2 >= mNumCols)
 			{
 				throw std::invalid_argument("Columns must be within the bounds of the matrix.");
 			}
-			for (int i = 0; i < mNumRows; ++i)
+			for (size_t i = 0; i < mNumRows; ++i)
 			{
 				std::swap(mData[i * mNumCols + col1], mData[i * mNumCols + col2]);
 			}
 		}
 
-		void ScaleRow(const int row, const DataType scalar)
+		void ScaleRow(const size_t row, const DataType scalar)
 		{
 			if (row < 0 || row >= mNumRows)
 			{
 				throw std::invalid_argument("Row must be within the bounds of the matrix.");
 			}
-			for (int i = 0; i < mNumCols; ++i)
+			for (size_t i = 0; i < mNumCols; ++i)
 			{
 				mData[row * mNumCols + i] *= scalar;
 			}
 		}
 
-		void ScaleCol(const int col, const DataType scalar)
+		void ScaleCol(const size_t col, const DataType scalar)
 		{
 			if (col < 0 || col >= mNumCols)
 			{
 				throw std::invalid_argument("Column must be within the bounds of the matrix.");
 			}
-			for (int i = 0; i < mNumRows; ++i)
+			for (size_t i = 0; i < mNumRows; ++i)
 			{
 				mData[i * mNumCols + col] *= scalar;
 			}
 		}
 
-		void AddRow(const int row1, const int row2, const DataType scalar)
+		void AddRow(const size_t row1, const size_t row2, const DataType scalar)
 		{
 			if (row1 < 0 || row1 >= mNumRows || row2 < 0 || row2 >= mNumRows)
 			{
 				throw std::invalid_argument("Rows must be within the bounds of the matrix.");
 			}
-			for (int i = 0; i < mNumCols; ++i)
+			for (size_t i = 0; i < mNumCols; ++i)
 			{
 				mData[row1 * mNumCols + i] += mData[row2 * mNumCols + i] * scalar;
 			}
 		}
 
-		void AddCol(const int col1, const int col2, const DataType scalar)
+		void AddCol(const size_t col1, const size_t col2, const DataType scalar)
 		{
 			if (col1 < 0 || col1 >= mNumCols || col2 < 0 || col2 >= mNumCols)
 			{
 				throw std::invalid_argument("Columns must be within the bounds of the matrix.");
 			}
-			for (int i = 0; i < mNumRows; ++i)
+			for (size_t i = 0; i < mNumRows; ++i)
 			{
 				mData[i * mNumCols + col1] += mData[i * mNumCols + col2] * scalar;
 			}
@@ -327,14 +361,14 @@ namespace LAR
 		Matrix RowEchelonForm() const
 		{
 			Matrix result(*this);
-			int lead = 0;
-			for (int r = 0; r < result.mNumRows; ++r)
+			size_t lead = 0;
+			for (size_t r = 0; r < result.mNumRows; ++r)
 			{
 				if (result.mNumCols <= lead)
 				{
 					break;
 				}
-				int i = r;
+				size_t i = r;
 				while (result(i, lead) == 0)
 				{
 					++i;
@@ -357,7 +391,7 @@ namespace LAR
 				{
 					result.ScaleRow(r, 1 / result(r, lead));
 				}
-				for (int i = 0; i < result.mNumRows; ++i)
+				for (size_t i = 0; i < result.mNumRows; ++i)
 				{
 					if (i != r)
 					{

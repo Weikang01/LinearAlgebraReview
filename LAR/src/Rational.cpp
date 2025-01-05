@@ -13,7 +13,17 @@ namespace LAR
 			mNumerator = -mNumerator;
 			mDenominator = -mDenominator;
 		}
-	};
+	}
+	void Rational::SimplifyForOperation(const Rational& r1, const Rational& r2, int& num1, int& den1, int& num2, int& den2)
+	{
+		int gcd1 = std::gcd(r1.mNumerator, r2.mDenominator);
+		int gcd2 = std::gcd(r2.mNumerator, r1.mDenominator);
+		num1 = r1.mNumerator / gcd1;
+		den1 = r1.mDenominator / gcd2;
+		num2 = r2.mNumerator / gcd2;
+		den2 = r2.mDenominator / gcd1;
+	}
+	;
 
 	Rational::Rational(int numerator, int denominator)
 	{
@@ -27,22 +37,45 @@ namespace LAR
 
 	Rational Rational::operator+(const Rational& other) const
 	{
-		return Rational(mNumerator * other.mDenominator + other.mNumerator * mDenominator, mDenominator * other.mDenominator);
+		int num1, den1, num2, den2;
+		SimplifyForOperation(*this, other, num1, den1, num2, den2);
+
+		int newNumerator = num1 * den2 + num2 * den1;
+		int newDenominator = den1 * den2;
+
+		return Rational(newNumerator, newDenominator);
 	}
 
 	Rational Rational::operator-(const Rational& other) const
 	{
-		return Rational(mNumerator * other.mDenominator - other.mNumerator * mDenominator, mDenominator * other.mDenominator);
+		int num1, den1, num2, den2;
+		SimplifyForOperation(*this, other, num1, den1, num2, den2);
+		
+		int newNumerator = num1 * den2 - num2 * den1;
+		int newDenominator = den1 * den2;
+
+		return Rational(newNumerator, newDenominator);
 	}
 
 	Rational Rational::operator*(const Rational& other) const
 	{
-		return Rational(mNumerator * other.mNumerator, mDenominator * other.mDenominator);
+		int num1, den1, num2, den2;
+		SimplifyForOperation(*this, other, num1, den1, num2, den2);
+
+		return Rational(num1 * num2, den1 * den2);
 	}
 
 	Rational Rational::operator/(const Rational& other) const
 	{
-		return Rational(mNumerator * other.mDenominator, mDenominator * other.mNumerator);
+		if (other.mNumerator == 0)
+		{
+			throw std::invalid_argument("Division by zero in Rational");
+		}
+
+		int num1, den1, num2, den2;
+		SimplifyForOperation(*this, other, num1, den1, num2, den2);
+
+		return Rational(num1 * den2, den1 * num2);
 	}
 
 	Rational& Rational::operator+=(const Rational& other)

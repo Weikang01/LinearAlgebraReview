@@ -15,18 +15,28 @@ namespace LAR
 	{
 	public:
 #pragma region Utility Functions
-		MatrixBase(const int rows, const int cols)
+		MatrixBase(const size_t rows, const size_t cols)
 			: mNumRows(rows), mNumCols(cols), mData(new DataType[rows * cols])
 		{
 		}
 		MatrixBase(const MatrixBase& other)
-			: mNumRows(other.mNumRows), mNumCols(other.mNumCols), mData(new DataType[other.mNumRows * other.mNumCols])
+			: mNumRows(other.mNumRows), mNumCols(other.mNumCols), mData(nullptr) // Initialize mData to nullptr
 		{
-			for (int i = 0; i < mNumRows * mNumCols; ++i)
+			if (mNumRows > 0 && mNumCols > 0)
 			{
-				mData[i] = other.mData[i];
+				mData = new DataType[mNumRows * mNumCols];
+
+				for (size_t i = 0; i < mNumRows * mNumCols; ++i)
+				{
+					mData[i] = other.mData[i];
+				}
+			}
+			else
+			{
+				mData = nullptr;
 			}
 		}
+
 		virtual ~MatrixBase()
 		{
 			delete[] mData;
@@ -43,7 +53,7 @@ namespace LAR
 				mNumRows = other.mNumRows;
 				mNumCols = other.mNumCols;
 				mData = new DataType[mNumRows * mNumCols];
-				for (int i = 0; i < mNumRows * mNumCols; ++i)
+				for (size_t i = 0; i < mNumRows * mNumCols; ++i)
 				{
 					mData[i] = other.mData[i];
 				}
@@ -51,11 +61,11 @@ namespace LAR
 			return *this;
 		}
 
-		int GetRows() const
+		size_t GetRows() const
 		{
 			return mNumRows;
 		}
-		int GetCols() const
+		size_t GetCols() const
 		{
 			return mNumCols;
 		}
@@ -66,7 +76,7 @@ namespace LAR
 			{
 				return false;
 			}
-			for (int i = 0; i < mNumRows * mNumCols; ++i)
+			for (size_t i = 0; i < mNumRows * mNumCols; ++i)
 			{
 				if (mData[i] != other.mData[i])
 				{
@@ -81,11 +91,11 @@ namespace LAR
 			return !(*this == other);
 		}
 
-		DataType& operator()(const int row, const int col)
+		DataType& operator()(const size_t row, const size_t col)
 		{
 			return mData[row * mNumCols + col];
 		}
-		DataType operator()(const int row, const int col) const
+		DataType operator()(const size_t row, const size_t col) const
 		{
 			return mData[row * mNumCols + col];
 		}
@@ -112,7 +122,7 @@ namespace LAR
 				throw std::invalid_argument("Matrices must be the same size to add them.");
 			}
 			Derived result(mNumRows, mNumCols);
-			for (int i = 0; i < mNumRows * mNumCols; ++i)
+			for (size_t i = 0; i < mNumRows * mNumCols; ++i)
 			{
 				result.mData[i] = mData[i] + other.mData[i];
 			}
@@ -127,7 +137,7 @@ namespace LAR
 				throw std::invalid_argument("Matrices must be the same size to subtract them.");
 			}
 			Derived result(mNumRows, mNumCols);
-			for (int i = 0; i < mNumRows * mNumCols; ++i)
+			for (size_t i = 0; i < mNumRows * mNumCols; ++i)
 			{
 				result.mData[i] = mData[i] - other.mData[i];
 			}
@@ -137,7 +147,7 @@ namespace LAR
 		Derived operator*(const DataType scalar) const
 		{
 			Derived result(mNumRows, mNumCols);
-			for (int i = 0; i < mNumRows * mNumCols; ++i)
+			for (size_t i = 0; i < mNumRows * mNumCols; ++i)
 			{
 				result.mData[i] = mData[i] * scalar;
 			}
@@ -148,7 +158,7 @@ namespace LAR
 		Derived operator/(const OtherDataType scalar) const
 		{
 			Derived result(mNumRows, mNumCols);
-			for (int i = 0; i < mNumRows * mNumCols; ++i)
+			for (size_t i = 0; i < mNumRows * mNumCols; ++i)
 			{
 				result.mData[i] = mData[i] / scalar;
 			}
@@ -158,7 +168,7 @@ namespace LAR
 		Derived operator-() const
 		{
 			Derived result(mNumRows, mNumCols);
-			for (int i = 0; i < mNumRows * mNumCols; ++i)
+			for (size_t i = 0; i < mNumRows * mNumCols; ++i)
 			{
 				result.mData[i] = -mData[i];
 			}
@@ -168,9 +178,9 @@ namespace LAR
 		Derived Transpose() const
 		{
 			Derived result(mNumCols, mNumRows);
-			for (int i = 0; i < mNumRows; ++i)
+			for (size_t i = 0; i < mNumRows; ++i)
 			{
-				for (int j = 0; j < mNumCols; ++j)
+				for (size_t j = 0; j < mNumCols; ++j)
 				{
 					result.mData[j * mNumRows + i] = mData[i * mNumCols + j];
 				}
@@ -183,17 +193,17 @@ namespace LAR
 			*this = Transpose();
 		}
 
-		int mNumRows;
-		int mNumCols;
+		size_t mNumRows;
+		size_t mNumCols;
 		DataType* mData;
 	};
 
 	template<typename Derived, typename DataType>
 	std::ostream& operator<<(std::ostream& os, const MatrixBase<Derived, DataType>& matrix)
 	{
-		for (int i = 0; i < matrix.mNumRows; ++i)
+		for (size_t i = 0; i < matrix.mNumRows; ++i)
 		{
-			for (int j = 0; j < matrix.mNumCols; ++j)
+			for (size_t j = 0; j < matrix.mNumCols; ++j)
 			{
 				os << matrix.mData[i * matrix.mNumCols + j] << " ";
 			}
